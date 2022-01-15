@@ -19,7 +19,12 @@ export const config = {
   },
 };
 
-const relevantEvents = new Set(['checkout.session.completed']);
+const relevantEvents = new Set([
+  'checkout.session.completed',
+  'customer.subscription.created',
+  'customer.subscription.updated',
+  'customer.subscription.deleted',
+]);
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method === 'POST') {
@@ -27,6 +32,8 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     const secret = req.headers['stripe-signature'];
 
     let event: Stripe.Event;
+
+    console.log(event);
 
     try {
       event = stripe.webhooks.constructEvent(
@@ -43,11 +50,22 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     if (relevantEvents.has(type)) {
       try {
         switch (type) {
+          case 'customer.subscription.updated':
+          case 'customer.subscription.deleted':
+            const subscription = event.data.object as Stripe.Subscription;
+
+            await saveSubscription(
+              subscription.id,
+              subscription.customer.toString(),
+              false
+            );
+            break;
           case 'checkout.session.completed':
             const checkouSession = event.data.object as Stripe.Checkout.Session;
             await saveSubscription(
               checkouSession.subscription.toString(),
-              checkouSession.client_reference_id.toString()
+              checkouSession.customer.toString(),
+              true
             );
             break;
           default:
