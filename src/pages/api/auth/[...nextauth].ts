@@ -17,7 +17,7 @@ export default NextAuth({
       },
     }),
   ],
-  jwt: { secret: process.env.SIGNIN_KEY },
+  // jwt: { secret: process.env.SIGNIN_KEY },
   callbacks: {
     async session({ session }) {
       try {
